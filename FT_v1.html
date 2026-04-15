@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#FAF7F2">
+<title>Parle — French Pocket Tutor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAF7F2;
+    --bg-card: #FFFFFF;
+    --bg-card-alt: #F3EFE8;
+    --fg: #1A1A1A;
+    --fg-dim: #6B6560;
+    --fg-muted: #A39E98;
+    --accent: #C84B31;
+    --accent-soft: #F2DDD6;
+    --accent-glow: rgba(200, 75, 49, 0.15);
+    --green: #2D8A56;
+    --green-soft: #DFF0E5;
+    --green-border: #C5E1CE;
+    --blue: #3B6DB5;
+    --blue-soft: #E0EAF5;
+    --blue-border: #B8CCE5;
+    --border: #E8E3DC;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+    --shadow-lg: 0 4px 24px rgba(0,0,0,0.06);
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body: 'DM Sans', -apple-system, sans-serif;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --error-bg: #FFF0EE;
+    --error-border: #F0C5BF;
+    --error-fg: #8B2D1A;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--fg);
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    pointer-events: none; opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 256px; z-index: 9999;
+  }
+
+  #root { min-height: 100dvh; }
+
+  @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  @keyframes pulse-ring { 0% { transform:scale(1); opacity:0.4; } 100% { transform:scale(1.8); opacity:0; } }
+  @keyframes breathe { 0%,100% { transform:scale(1); } 50% { transform:scale(1.04); } }
+  @keyframes slideIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  @keyframes dotBounce {
+    0%,80%,100% { transform:translateY(0); }
+    40% { transform:translateY(-4px); }
+  }
+
+  .fade-up { animation: fadeUp 0.5s var(--ease) both; }
+  .fade-up-1 { animation-delay: 0.05s; }
+  .fade-up-2 { animation-delay: 0.1s; }
+  .fade-up-3 { animation-delay: 0.15s; }
+  .slide-in { animation: slideIn 0.35s var(--ease) both; }
+
+  .scene-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .scene-btn {
+    padding: 14px 12px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--bg-card);
+    cursor: pointer; text-align: left; font-family: var(--font-body);
+    transition: all 0.15s var(--ease);
+  }
+  .scene-btn:hover, .scene-btn:active { border-color: var(--accent); background: var(--accent-soft); }
+  .scene-btn-active { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 2px var(--accent-glow); }
+
+  .chip {
+    display: inline-block; padding: 7px 14px; margin: 0 6px 6px 0;
+    border-radius: 20px; border: 1px solid var(--border);
+    background: var(--bg-card); font-size: 13.5px; color: var(--fg-dim);
+    cursor: pointer; font-family: var(--font-body); font-style: italic;
+    transition: all 0.15s var(--ease);
+  }
+  .chip:hover, .chip:active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+  .text-input-row { display: flex; gap: 8px; align-items: center; padding: 0 16px; margin-bottom: 6px; }
+  .text-input-row input {
+    flex: 1; padding: 10px 14px; font-size: 15px;
+    border: 1px solid var(--border); border-radius: 24px;
+    background: var(--bg-card); outline: none;
+    font-family: var(--font-body); font-style: italic;
+    color: var(--fg); transition: border-color 0.2s;
+  }
+  .text-input-row input:focus { border-color: var(--accent); }
+  .text-input-row input::placeholder { color: var(--fg-muted); }
+  .text-input-row button {
+    width: 38px; height: 38px; border-radius: 50%;
+    border: none; background: var(--accent); color: #fff;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: opacity 0.15s;
+  }
+  .text-input-row button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.35); backdrop-filter: blur(4px);
+    display: flex; align-items: flex-end; justify-content: center;
+    animation: fadeIn 0.2s ease both;
+  }
+  .modal-sheet {
+    width: 100%; max-width: 520px; max-height: 85dvh;
+    background: var(--bg); border-radius: 20px 20px 0 0;
+    padding: 20px 18px 28px; overflow-y: auto;
+    animation: slideIn 0.3s var(--ease) both;
+  }
+
+  .playing-indicator {
+    display: inline-flex; gap: 2px; align-items: flex-end;
+    height: 14px; margin-left: 6px; vertical-align: middle;
+  }
+  .playing-indicator span {
+    width: 3px; background: var(--accent); border-radius: 1px;
+    animation: dotBounce 0.9s ease-in-out infinite;
+  }
+  .playing-indicator span:nth-child(1) { height: 6px; animation-delay: 0s; }
+  .playing-indicator span:nth-child(2) { height: 10px; animation-delay: 0.15s; }
+  .playing-indicator span:nth-child(3) { height: 6px; animation-delay: 0.3s; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.9/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ════════════════════════════════════════════
+   CONSTANTS
+   ════════════════════════════════════════════ */
+
+const CEFR_LEVELS = ["A1","A2","B1","B2","C1","C2"];
+const CEFR_LABELS = { A1:"Débutant", A2:"Élémentaire", B1:"Intermédiaire", B2:"Avancé", C1:"Autonome", C2:"Maîtrise" };
+
+const SCENES = [
+  { id:"bus_smalltalk", title:"Dans le bus", emoji:"🚌",
+    hint:"You're chatting with a friendly stranger on the bus.",
+    opener:{ A1:"Bonjour !", A2:"Bonjour ! Il fait beau aujourd'hui, non ?", B1:"Bonjour ! Vous allez loin ? Moi je descends au centre-ville.", B2:"Bonjour ! C'est rare d'avoir une place assise à cette heure, n'est-ce pas ?", C1:"Tiens, c'est la première fois que ce bus est à l'heure ! Vous prenez cette ligne souvent ?", C2:"Quelle affluence aujourd'hui ! On croirait que toute la ville a décidé de prendre le bus en même temps." },
+    suggestions:{ A1:["Bonjour","Oui, il fait beau","Je m'appelle…"], A2:["Oui, il fait très beau !","Je vais au centre-ville","Vous habitez ici ?"], B1:["Je vais au travail, et vous ?","J'habite pas loin d'ici","Vous connaissez un bon café ?"], B2:["Oui c'est vrai, j'ai eu de la chance","Je prends cette ligne tous les jours","Le trajet est long pour vous ?"], C1:["Effectivement, c'est inhabituel","Je la prends quotidiennement depuis des années","Les transports en commun ici sont imprévisibles"], C2:["C'est le paradoxe des transports urbains","Il paraît qu'ils vont augmenter la fréquence","J'ai renoncé à la voiture depuis longtemps"] }
+  },
+  { id:"cafe_ordering", title:"Au café", emoji:"☕",
+    hint:"You're ordering a coffee and chatting with the barista.",
+    opener:{ A1:"Bonjour ! Qu'est-ce que vous voulez ?", A2:"Bonjour ! Qu'est-ce que je vous sers ?", B1:"Bonjour ! Installez-vous, je vous apporte la carte. Vous avez déjà une idée ?", B2:"Bienvenue ! On a un nouveau mélange colombien aujourd'hui, ça vous tente ?", C1:"Ah, un nouveau visage ! Bienvenue dans notre petit café. Vous êtes du quartier ?", C2:"Bonjour et bienvenue ! Vous tombez bien, notre torréfacteur vient de nous livrer un assemblage éthiopien remarquable." },
+    suggestions:{ A1:["Un café, s'il vous plaît","Un thé","Merci"], A2:["Je voudrais un café crème","Vous avez des croissants ?","C'est combien ?"], B1:["Je vais prendre un allongé","Qu'est-ce que vous recommandez ?","Je peux avoir un verre d'eau aussi ?"], B2:["Pourquoi pas, j'aime bien essayer","Qu'est-ce qu'il a de spécial ?","Vous torréfiez sur place ?"], C1:["Non, je suis de passage","L'ambiance est vraiment chaleureuse ici","Ça fait longtemps que vous tenez ce café ?"], C2:["L'Éthiopie, c'est souvent des notes florales","Je suis curieux de goûter ça","Vous travaillez avec quel torréfacteur ?"] }
+  },
+  { id:"work_smalltalk", title:"Au travail", emoji:"💼",
+    hint:"You're making small talk with a colleague at work.",
+    opener:{ A1:"Salut ! Ça va ?", A2:"Salut ! Tu as passé un bon week-end ?", B1:"Salut ! Tu as vu le mail de ce matin ? Apparemment on a une réunion cet après-midi.", B2:"Eh, salut ! Dis-moi, t'as avancé sur le projet ? Le client veut un retour cette semaine.", C1:"Tiens, tu es là tôt ! Tu prépares la présentation de demain ou tu rattrapes ton retard comme moi ?", C2:"Figure-toi que la direction vient d'annoncer une restructuration. Tu en penses quoi ?" },
+    suggestions:{ A1:["Ça va bien, merci","Oui, et toi ?","J'ai travaillé"], A2:["Oui, très bien ! Et toi ?","J'ai fait une promenade","Il fait beau ce matin"], B1:["Ah non, je n'ai pas vu","C'est à quelle heure ?","Tu sais de quoi on va parler ?"], B2:["J'ai bien avancé hier soir","Il faut qu'on en discute","Tu penses qu'on sera prêts ?"], C1:["Un peu des deux, à vrai dire","La présentation avance bien","Et toi, tu gères comment la charge ?"], C2:["Ça ne m'étonne qu'à moitié","Il faudra voir les détails","Tu penses que ça va impacter notre équipe ?"] }
+  },
+  { id:"asking_directions", title:"Demander son chemin", emoji:"🗺️",
+    hint:"You're asking a passerby for directions in town.",
+    opener:{ A1:"Bonjour ! Vous cherchez quelque chose ?", A2:"Bonjour ! Vous avez l'air perdu, je peux vous aider ?", B1:"Vous cherchez votre chemin ? Le quartier n'est pas facile quand on ne connaît pas !", B2:"Vous avez besoin d'aide ? Je connais le coin comme ma poche.", C1:"Ah, encore un touriste perdu dans nos ruelles ! Je plaisante — vous cherchez quoi exactement ?", C2:"Les rues ici sont un vrai labyrinthe, même les habitants s'y perdent parfois. Je vous écoute !" },
+    suggestions:{ A1:["Où est la gare ?","La pharmacie, s'il vous plaît","Merci beaucoup"], A2:["Je cherche la gare","C'est loin ?","Je tourne à gauche ou à droite ?"], B1:["Je cherche la rue Victor Hugo","C'est à combien de minutes à pied ?","Il y a un plan du quartier ?"], B2:["Je cherche un bon restaurant pas trop loin","Quel est le chemin le plus rapide ?","Vous me conseillez de prendre le bus ?"], C1:["Je cherche la place du marché","J'ai l'impression de tourner en rond","Vous pourriez m'indiquer un raccourci ?"], C2:["Je me suis aventuré sans GPS, c'était audacieux","Connaîtriez-vous un itinéraire pittoresque ?","Le patrimoine architectural ici vaut le détour"] }
+  },
+  { id:"marche", title:"Au marché", emoji:"🍅",
+    hint:"You're shopping at an open-air market.",
+    opener:{ A1:"Bonjour ! Regardez, les tomates sont belles !", A2:"Bonjour ! Goûtez ces fraises, elles sont délicieuses !", B1:"Bonjour ! Les abricots viennent d'arriver ce matin. Vous voulez goûter ?", B2:"Ah, bonjour ! Aujourd'hui j'ai des produits de saison magnifiques. Vous cherchez quelque chose en particulier ?", C1:"Bienvenue ! Tout vient directement de notre exploitation. Vous cuisinez quoi ce soir ? Je peux vous conseiller.", C2:"Ah, un connaisseur ! Nos légumes sont cultivés en permaculture. Laissez-moi vous faire découvrir nos variétés anciennes." },
+    suggestions:{ A1:["Bonjour","Combien ?","Un kilo, s'il vous plaît"], A2:["Je voudrais des tomates","C'est combien le kilo ?","Elles sont de la région ?"], B1:["Oui, je veux bien goûter","Donnez-moi un kilo","Qu'est-ce qui est de saison ?"], B2:["Je prépare une ratatouille","Qu'est-ce que vous me conseillez ?","Les prix sont affichés ?"], C1:["Je fais un dîner pour des amis","Quels légumes se marient bien ensemble ?","Vous êtes maraîcher depuis longtemps ?"], C2:["La permaculture, c'est tout un engagement","Quelles variétés anciennes avez-vous ?","Le terroir influence beaucoup le goût"] }
+  },
+  { id:"restaurant", title:"Au restaurant", emoji:"🍽️",
+    hint:"You're ordering dinner at a bistro.",
+    opener:{ A1:"Bonsoir ! Voici la carte.", A2:"Bonsoir ! Une table pour combien de personnes ?", B1:"Bonsoir et bienvenue ! On a un excellent plat du jour : un bœuf bourguignon. Ça vous dit ?", B2:"Bonsoir ! Je vous installe près de la fenêtre ? Notre chef a préparé un menu spécial ce soir.", C1:"Bonsoir ! Vous avez réservé ? On a une soirée chargée mais je vais vous trouver une bonne table.", C2:"Bienvenue ! Ce soir le chef propose un menu dégustation en cinq services avec accord mets-vins." },
+    suggestions:{ A1:["Bonsoir","La carte, s'il vous plaît","De l'eau"], A2:["Pour deux personnes","Qu'est-ce que vous recommandez ?","Je voudrais du vin"], B1:["Le bœuf bourguignon, c'est parfait","Vous avez une carte des vins ?","Je suis allergique aux noix"], B2:["Avec plaisir pour la fenêtre","Qu'est-ce qu'il y a dans le menu spécial ?","Un apéritif pour commencer"], C1:["Non, on tente notre chance","C'est quoi l'ambiance ce soir ?","Votre carte change souvent ?"], C2:["Un accord mets-vins, c'est tentant","Quels cépages avez-vous sélectionnés ?","Le chef s'inspire de quelle cuisine ?"] }
+  },
+  { id:"pharmacie", title:"À la pharmacie", emoji:"💊",
+    hint:"You need to describe a minor ailment at the pharmacy.",
+    opener:{ A1:"Bonjour ! Comment je peux vous aider ?", A2:"Bonjour ! Vous avez besoin de quelque chose ?", B1:"Bonjour ! Qu'est-ce qui vous amène aujourd'hui ?", B2:"Bonjour ! Vous n'avez pas l'air en forme. Dites-moi ce qui ne va pas.", C1:"Bonjour ! Décrivez-moi vos symptômes et je verrai ce que je peux vous proposer.", C2:"Bonjour ! Je suis à votre disposition. N'hésitez pas à me détailler vos symptômes." },
+    suggestions:{ A1:["J'ai mal à la tête","J'ai mal au ventre","J'ai froid"], A2:["J'ai mal à la gorge depuis hier","Vous avez de l'aspirine ?","Je tousse beaucoup"], B1:["J'ai attrapé un rhume","Qu'est-ce que vous me conseillez ?","C'est sans ordonnance ?"], B2:["J'ai des symptômes grippaux depuis deux jours","Y a-t-il des effets secondaires ?","Je prends déjà du paracétamol"], C1:["J'ai des douleurs musculaires persistantes","Pensez-vous qu'une consultation médicale s'impose ?","Quelle est la posologie recommandée ?"], C2:["Je souffre de migraines récurrentes","Existe-t-il des alternatives homéopathiques ?","J'aimerais comprendre les interactions médicamenteuses"] }
+  },
+  { id:"voisin", title:"Chez le voisin", emoji:"🏠",
+    hint:"You just moved in and are introducing yourself to your neighbor.",
+    opener:{ A1:"Bonjour ! Vous êtes nouveau ?", A2:"Oh, bonjour ! C'est vous le nouveau voisin ? Bienvenue !", B1:"Tiens, bonjour ! Je vous ai vu emménager hier. Bienvenue dans l'immeuble ! Moi c'est Marie.", B2:"Ah, enfin on se rencontre ! J'habite juste en face. C'est un quartier très sympa, vous allez voir.", C1:"Bienvenue dans le quartier ! J'espère que l'emménagement s'est bien passé. N'hésitez pas si vous avez besoin de quoi que ce soit.", C2:"Enchanté de faire votre connaissance ! Le quartier a beaucoup de charme, vous avez fait un excellent choix. D'où venez-vous ?" },
+    suggestions:{ A1:["Bonjour, oui","Je m'appelle…","Merci"], A2:["Oui, je viens d'arriver","Merci, c'est gentil","Vous habitez ici depuis longtemps ?"], B1:["Enchanté Marie ! Moi c'est…","L'immeuble a l'air calme","Vous connaissez un bon supermarché ?"], B2:["Ravi de vous rencontrer","Ça a l'air d'un super quartier","Qu'est-ce qu'il y a à faire dans le coin ?"], C1:["L'emménagement était épuisant mais on s'installe","C'est un changement complet pour moi","Quels sont les bons plans du quartier ?"], C2:["Merci pour cet accueil chaleureux","Le patrimoine architectural m'a séduit","J'aimerais m'intégrer à la vie du quartier"] }
+  }
+];
+
+/* ════════════════════════════════════════════
+   SYSTEM PROMPT
+   ════════════════════════════════════════════ */
+
+const SYSTEM_PROMPT = (cefrLevel) => `
+You are a friendly French conversation partner and light tutor named Parle.
+- Goal: reply to continue the conversation naturally.
+- You receive: CEFR level, scene info, session summary, recent turns. Use them for continuity.
+- French reply rules (non-negotiable):
+  - Voice-first: 1–3 sentences, friend-like, easy, confidence-building.
+  - Stay consistent with the scene lightly (don't force it).
+  - ~70% of the time ask ONE natural follow-up question in French.
+  - Sometimes add a tiny personal detail ("Moi aussi…", "Ça me fait penser à…").
+- Corrections:
+  - Output corrections ONLY in notes_en, only if the user's French has errors that would block smoothness/meaning for a native speaker. Skip nitpicks.
+  - Each note MUST include the corrected French phrase so the learner sees the fix. Format: explain the error in English, then show the correction. Example: "Use 'la table' not 'le table' — table is feminine in French."
+  - Never correct the user inside the French reply.
+- CEFR target: ${cefrLevel} — adapt vocabulary, complexity, and nuance.
+
+Return valid JSON only (no markdown fences) with exactly these fields:
+- tutor_text_fr (string): your French reply
+- notes_en (array of strings): 0-3 correction notes in English, each including the corrected French
+- session_summary (string): <=30 words, English, ultra-dense facts only (who/where/job/hobbies/preferences/plans). If no new facts, return previous summary unchanged.
+`.trim();
+
+/* ════════════════════════════════════════════
+   HELPERS
+   ════════════════════════════════════════════ */
+
+function pickMime() {
+  for (const t of ["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/mpeg"]) {
+    if (window.MediaRecorder?.isTypeSupported?.(t)) return t;
+  }
+  return "";
+}
+
+function filenameForMime(mime) {
+  if (mime.includes("mp4")) return "audio.mp4";
+  if (mime.includes("mpeg")) return "audio.mp3";
+  if (mime.includes("wav")) return "audio.wav";
+  if (mime.includes("ogg")) return "audio.ogg";
+  return "audio.webm";
+}
+
+function friendlyApiError(status, body) {
+  if (status === 401) return "Invalid API key. Please check your key and try again.";
+  if (status === 429) return "Rate limit exceeded — wait a moment and try again.";
+  if (status === 402 || (body && body.includes("insufficient_quota")))
+    return "Your OpenAI account has no credits. Add billing at platform.openai.com.";
+  if (status >= 500) return "OpenAI servers are having issues. Try again shortly.";
+  return null;
+}
+
+/* ════════════════════════════════════════════
+   COMPONENTS
+   ════════════════════════════════════════════ */
+
+function ApiKeyScreen({ onSubmit }) {
+  const [key, setKey] = useState("");
+  const [testing, setTesting] = useState(false);
+  const [err, setErr] = useState(null);
+  const inputRef = useRef(null);
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const handleSubmit = async (e) => {
+    e?.preventDefault();
+    const trimmed = key.trim();
+    if (!trimmed) return;
+    setTesting(true); setErr(null);
+    try {
+      const resp = await fetch("https://api.openai.com/v1/models", {
+        headers: { "Authorization": `Bearer ${trimmed}` }
+      });
+      if (!resp.ok) {
+        const body = await resp.text();
+        throw new Error(friendlyApiError(resp.status, body) || "Could not validate key (error " + resp.status + ")");
+      }
+      onSubmit(trimmed);
+    } catch (e) {
+      setErr(e.message || "Could not validate key.");
+    } finally { setTesting(false); }
+  };
+
+  return (
+    <div style={{ minHeight:"100dvh", display:"flex", alignItems:"center", justifyContent:"center", padding:24, background:"var(--bg)" }}>
+      <div className="fade-up" style={{ maxWidth:420, width:"100%", textAlign:"center" }}>
+        <div style={{ fontSize:48, marginBottom:8 }}>🇫🇷</div>
+        <h1 style={{ fontFamily:"var(--font-display)", fontSize:"clamp(32px,8vw,44px)", fontWeight:400, letterSpacing:"-0.02em", marginBottom:6 }}>Parle</h1>
+        <p style={{ fontFamily:"var(--font-display)", fontStyle:"italic", color:"var(--fg-dim)", fontSize:17, marginBottom:32 }}>Your French pocket tutor</p>
+        <div className="fade-up fade-up-2" style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--radius)", padding:24, boxShadow:"var(--shadow)", textAlign:"left" }}>
+          <label style={{ display:"block", fontSize:13, fontWeight:500, color:"var(--fg-dim)", marginBottom:8, letterSpacing:"0.02em", textTransform:"uppercase" }}>OpenAI API Key</label>
+          <p style={{ fontSize:13.5, color:"var(--fg-dim)", marginBottom:16, lineHeight:1.5 }}>
+            Your key stays in this browser only. It's sent directly to OpenAI — never to any other server.
+          </p>
+          <form onSubmit={handleSubmit}>
+            <input ref={inputRef} type="password" placeholder="sk-..." value={key}
+              onChange={e => setKey(e.target.value)}
+              style={{ width:"100%", padding:"12px 14px", fontSize:15, border:"1px solid var(--border)", borderRadius:"var(--radius-sm)", background:"var(--bg)", outline:"none", fontFamily:"var(--font-body)", transition:"border-color 0.2s" }}
+              onFocus={e => e.target.style.borderColor = "var(--accent)"} onBlur={e => e.target.style.borderColor = "var(--border)"} />
+            {err && <div style={{ marginTop:10, padding:"8px 12px", background:"var(--error-bg)", border:"1px solid var(--error-border)", borderRadius:"var(--radius-sm)", fontSize:13.5, color:"var(--error-fg)", lineHeight:1.4 }}>{err}</div>}
+            <button type="submit" disabled={!key.trim() || testing}
+              style={{ width:"100%", marginTop:12, padding:13, background:key.trim()&&!testing?"var(--accent)":"var(--border)", color:key.trim()&&!testing?"#fff":"var(--fg-muted)", border:"none", borderRadius:"var(--radius-sm)", fontSize:15, fontWeight:600, cursor:key.trim()&&!testing?"pointer":"not-allowed", fontFamily:"var(--font-body)", transition:"all 0.2s" }}>
+              {testing ? "Validating…" : "Commencer"}
+            </button>
+          </form>
+        </div>
+        <p className="fade-up fade-up-3" style={{ marginTop:16, fontSize:12.5, color:"var(--fg-muted)", lineHeight:1.5 }}>
+          Get a key at <span style={{textDecoration:"underline"}}>platform.openai.com</span> → API Keys
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function Bubble({ role, text, notes, isLatest, onReplay, onReplaySlow, playing }) {
+  const isUser = role === "user";
+  return (
+    <div className={isLatest ? "slide-in" : ""} style={{ display:"flex", flexDirection:"column", alignItems:isUser?"flex-end":"flex-start", marginBottom:12, maxWidth:"88%", alignSelf:isUser?"flex-end":"flex-start" }}>
+      <div style={{ padding:"12px 16px", background:isUser?"var(--fg)":"var(--bg-card)", color:isUser?"#fff":"var(--fg)", borderRadius:isUser?"18px 18px 4px 18px":"18px 18px 18px 4px", fontSize:15.5, lineHeight:1.55, boxShadow:isUser?"none":"var(--shadow)", border:isUser?"none":"1px solid var(--border)", fontStyle:isUser?"italic":"normal", wordBreak:"break-word" }}>
+        {!isUser && <div style={{ fontSize:11, textTransform:"uppercase", letterSpacing:"0.05em", color:"var(--fg-muted)", marginBottom:5, fontWeight:500 }}>Tuteur</div>}
+        <span>{text}</span>
+        {!isUser && playing && <span className="playing-indicator"><span/><span/><span/></span>}
+        {!isUser && (onReplay || onReplaySlow) && (
+          <span style={{ marginLeft:8, whiteSpace:"nowrap" }}>
+            {onReplay && <button onClick={onReplay} title="Replay" style={{ padding:"3px 8px", fontSize:12, background:"var(--bg-card-alt)", border:"1px solid var(--border)", borderRadius:8, cursor:"pointer", color:"var(--fg-dim)", fontFamily:"var(--font-body)", marginRight:4 }}>🔊</button>}
+            {onReplaySlow && <button onClick={onReplaySlow} title="Slow replay" style={{ padding:"3px 8px", fontSize:11, background:"var(--bg-card-alt)", border:"1px solid var(--border)", borderRadius:8, cursor:"pointer", color:"var(--fg-dim)", fontFamily:"var(--font-body)" }}>🐢</button>}
+          </span>
+        )}
+      </div>
+      {notes && notes.length > 0 && (
+        <div style={{ marginTop:6, padding:"10px 14px", background:"var(--green-soft)", borderRadius:"var(--radius-sm)", fontSize:13.5, lineHeight:1.5, color:"#1F5C38", maxWidth:"100%", border:"1px solid var(--green-border)" }}>
+          <div style={{ fontWeight:600, fontSize:11.5, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:4 }}>💡 Corrections</div>
+          {notes.map((n,i) => <div key={i} style={{ marginTop:i>0?5:0 }}>• {n}</div>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RecordButton({ recording, processing, onPressStart, onPressStop }) {
+  return (
+    <div style={{ position:"relative", display:"flex", justifyContent:"center", padding:"6px 0" }}>
+      {recording && <div style={{ position:"absolute", top:"50%", left:"50%", width:76, height:76, marginTop:-38, marginLeft:-38, borderRadius:"50%", background:"var(--accent-glow)", animation:"pulse-ring 1.5s ease-out infinite", pointerEvents:"none" }} />}
+      <button disabled={processing}
+        onMouseDown={e=>{e.preventDefault();onPressStart();}} onMouseUp={e=>{e.preventDefault();onPressStop();}} onMouseLeave={e=>{e.preventDefault();if(recording)onPressStop();}}
+        onTouchStart={e=>{e.preventDefault();onPressStart();}} onTouchEnd={e=>{e.preventDefault();onPressStop();}} onTouchCancel={e=>{e.preventDefault();onPressStop();}}
+        style={{ position:"relative", zIndex:2, width:60, height:60, borderRadius:"50%", border:recording?"3px solid var(--accent)":"2px solid var(--border)", background:recording?"var(--accent-soft)":"var(--bg-card)", cursor:processing?"wait":"pointer", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:recording?"0 0 0 6px var(--accent-glow)":"var(--shadow)", transition:"all 0.2s var(--ease)", animation:recording?"breathe 1.8s ease-in-out infinite":"none", userSelect:"none", touchAction:"none", opacity:processing?0.5:1 }}>
+        {processing ? (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{animation:"spin 1s linear infinite"}}><circle cx="12" cy="12" r="10" stroke="var(--fg-muted)" strokeWidth="2.5" strokeDasharray="50" strokeLinecap="round"/></svg>
+        ) : recording ? (
+          <div style={{ width:18, height:18, borderRadius:4, background:"var(--accent)" }} />
+        ) : (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--accent)"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="18" x2="12" y2="22" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round"/></svg>
+        )}
+      </button>
+    </div>
+  );
+}
+
+function ScenePicker({ current, onPick, onClose }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+          <h2 style={{ fontFamily:"var(--font-display)", fontSize:20, fontWeight:400 }}>Choose a scene</h2>
+          <button onClick={onClose} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:"var(--fg-dim)", padding:4 }}>✕</button>
+        </div>
+        <div className="scene-grid">
+          {SCENES.map(s => (
+            <button key={s.id} className={`scene-btn ${s.id===current?.id?"scene-btn-active":""}`} onClick={() => onPick(s)}>
+              <div style={{ fontSize:22, marginBottom:4 }}>{s.emoji}</div>
+              <div style={{ fontSize:13.5, fontWeight:600, marginBottom:2 }}>{s.title}</div>
+              <div style={{ fontSize:11.5, color:"var(--fg-dim)", lineHeight:1.35 }}>{s.hint}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SessionSummaryModal({ turnCount, sessionSummary, onClose, onNewSession }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ textAlign:"center", padding:"32px 24px" }}>
+        <div style={{ fontSize:40, marginBottom:12 }}>🎉</div>
+        <h2 style={{ fontFamily:"var(--font-display)", fontSize:22, fontWeight:400, marginBottom:8 }}>Bien joué !</h2>
+        <p style={{ fontSize:15, color:"var(--fg-dim)", marginBottom:20, lineHeight:1.6 }}>
+          You completed <strong>{turnCount} exchange{turnCount!==1?"s":""}</strong> this session.
+        </p>
+        {sessionSummary && (
+          <div style={{ padding:"14px 18px", background:"var(--bg-card-alt)", borderRadius:"var(--radius-sm)", fontSize:14, color:"var(--fg-dim)", lineHeight:1.5, textAlign:"left", marginBottom:20, border:"1px solid var(--border)" }}>
+            <div style={{ fontSize:11, textTransform:"uppercase", letterSpacing:"0.04em", fontWeight:600, color:"var(--fg-muted)", marginBottom:6 }}>What you talked about</div>
+            {sessionSummary}
+          </div>
+        )}
+        <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+          <button onClick={onClose} style={{ padding:"12px 20px", borderRadius:"var(--radius-sm)", border:"1px solid var(--border)", background:"var(--bg-card)", fontSize:14, cursor:"pointer", fontFamily:"var(--font-body)", color:"var(--fg-dim)" }}>Keep going</button>
+          <button onClick={onNewSession} style={{ padding:"12px 20px", borderRadius:"var(--radius-sm)", border:"none", background:"var(--accent)", color:"#fff", fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"var(--font-body)" }}>New session</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════
+   MAIN APP
+   ════════════════════════════════════════════ */
+
+function App() {
+  const [apiKey, setApiKey] = useState(() => { try { return localStorage.getItem("parle_api_key")||""; } catch { return ""; } });
+  const [cefrLevel, setCefrLevel] = useState("A2");
+  const [scene, setScene] = useState(() => SCENES[Math.floor(Math.random() * SCENES.length)]);
+  const [sessionSummary, setSessionSummary] = useState("");
+  const [history, setHistory] = useState([]);
+  const [recording, setRecording] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState(null);
+  const [showScenePicker, setShowScenePicker] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const [textInput, setTextInput] = useState("");
+  const [playingIdx, setPlayingIdx] = useState(null);
+
+  const mediaRecorderRef = useRef(null);
+  const chunksRef = useRef([]);
+  const streamRef = useRef(null);
+  const scrollRef = useRef(null);
+  const pressedRef = useRef(false);
+  const textInputRef = useRef(null);
+  const currentAudioRef = useRef(null);
+  const hasInit = useRef(false);
+
+  /* ── Audio ── */
+  function stopAudio() {
+    try { currentAudioRef.current?.pause(); currentAudioRef.current = null; } catch {}
+    try { window.speechSynthesis?.cancel?.(); } catch {}
+    setPlayingIdx(null);
+  }
+
+  function speakOpenAI(text, key, speed) {
+    if (!key || !text) return;
+    stopAudio();
+    fetch("https://api.openai.com/v1/audio/speech", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + key, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "tts-1", voice: "nova", input: text, speed: speed || 1.0 })
+    }).then(resp => {
+      if (!resp.ok) throw new Error("TTS failed");
+      return resp.blob();
+    }).then(blob => {
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      currentAudioRef.current = audio;
+      audio.onended = () => { setPlayingIdx(null); URL.revokeObjectURL(url); };
+      audio.onerror = () => { setPlayingIdx(null); URL.revokeObjectURL(url); };
+      audio.play();
+    }).catch(() => {
+      // Fallback to browser TTS
+      try {
+        window.speechSynthesis?.cancel?.();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "fr-FR";
+        const voices = window.speechSynthesis?.getVoices?.() ?? [];
+        const fr = voices.filter(v => (v.lang||"").toLowerCase().startsWith("fr"));
+        const v = fr.find(v => /female|femme|julie|audrey|amélie|amelie|marie|céline|celine/i.test(v.name)) || fr[0];
+        if (v) u.voice = v;
+        u.rate = speed || 0.92;
+        u.onend = () => setPlayingIdx(null);
+        window.speechSynthesis?.speak(u);
+      } catch { setPlayingIdx(null); }
+    });
+  }
+
+  /* ── Init session with tutor opener ── */
+  function initSession(s, level, key) {
+    setHistory([]);
+    setSessionSummary("");
+    setError(null);
+    stopAudio();
+    const opener = s.opener?.[level] || s.opener?.A2 || "Bonjour !";
+    setHistory([{ role:"tutor", text:opener, notes:[] }]);
+    setTimeout(() => speakOpenAI(opener, key), 300);
+  }
+
+  // Fire opener when we have apiKey + scene
+  useEffect(() => {
+    if (apiKey && scene && !hasInit.current) {
+      hasInit.current = true;
+      initSession(scene, cefrLevel, apiKey);
+    }
+  }, [apiKey, scene]);
+
+  // Warm up voices
+  useEffect(() => {
+    window.speechSynthesis?.getVoices?.();
+    const h = () => window.speechSynthesis?.getVoices?.();
+    window.speechSynthesis?.addEventListener?.("voiceschanged", h);
+    return () => window.speechSynthesis?.removeEventListener?.("voiceschanged", h);
+  }, []);
+
+  // Auto-scroll
+  useEffect(() => {
+    if (scrollRef.current) setTimeout(() => scrollRef.current?.scrollTo({ top:scrollRef.current.scrollHeight, behavior:"smooth" }), 80);
+  }, [history, processing]);
+
+  /* ── Key ── */
+  const handleApiKey = (key) => { setApiKey(key); try { localStorage.setItem("parle_api_key", key); } catch {} };
+  const clearKey = () => { setApiKey(""); hasInit.current = false; setHistory([]); try { localStorage.removeItem("parle_api_key"); } catch {} };
+
+  /* ── Session ── */
+  function newSession() {
+    const s = SCENES[Math.floor(Math.random() * SCENES.length)];
+    setScene(s);
+    initSession(s, cefrLevel, apiKey);
+  }
+
+  function pickScene(s) {
+    setScene(s);
+    setShowScenePicker(false);
+    initSession(s, cefrLevel, apiKey);
+  }
+
+  function cycleLevel() {
+    setCefrLevel(prev => CEFR_LEVELS[(CEFR_LEVELS.indexOf(prev) + 1) % CEFR_LEVELS.length]);
+  }
+
+  /* ── Replay ── */
+  function replayAtIndex(idx, slow) {
+    const msg = history[idx];
+    if (!msg || msg.role !== "tutor") return;
+    setPlayingIdx(idx);
+    speakOpenAI(msg.text, apiKey, slow ? 0.7 : 1.0);
+  }
+
+  /* ── Transcription ── */
+  async function transcribe(blob) {
+    const form = new FormData();
+    form.append("file", blob, filenameForMime(blob.type || "audio/webm"));
+    form.append("model", "whisper-1");
+    form.append("language", "fr");
+    const resp = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+      method: "POST", headers: { "Authorization": "Bearer " + apiKey }, body: form
+    });
+    if (!resp.ok) {
+      const body = await resp.text();
+      throw new Error(friendlyApiError(resp.status, body) || "Transcription failed (" + resp.status + ")");
+    }
+    return ((await resp.json()).text || "").trim();
+  }
+
+  /* ── Tutor turn ── */
+  async function callTutor(userText, hist) {
+    const recent = hist.slice(-8);
+    const historyText = recent.map(h => (h.role==="user"?"U":"T") + ": " + h.text).join("\n");
+    const userMessage = "Scene: " + (scene?.title||"") + "\nScene hint: " + (scene?.hint||"") + "\n\nRecent conversation:\n" + (historyText||"(none)") + "\n\nSession summary: " + (sessionSummary||"") + "\n\nUser said (French): " + userText + "\n\nReturn JSON only, no markdown fences.";
+
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT(cefrLevel) },
+          { role: "user", content: userMessage }
+        ],
+        temperature: 0.8, max_tokens: 500,
+        response_format: { type: "json_object" }
+      })
+    });
+    if (!resp.ok) {
+      const body = await resp.text();
+      throw new Error(friendlyApiError(resp.status, body) || "Tutor error (" + resp.status + ")");
+    }
+    const raw = (await resp.json()).choices?.[0]?.message?.content || "{}";
+    return JSON.parse(raw);
+  }
+
+  /* ── Process turn (voice or text) ── */
+  async function processTurn(userText) {
+    const t = (userText || "").trim();
+    if (!t) return;
+    stopAudio();
+    setError(null);
+
+    const newHist = [...history, { role:"user", text: t }];
+    setHistory(newHist);
+    setProcessing(true);
+
+    try {
+      const result = await callTutor(t, newHist);
+      const tutorText = result.tutor_text_fr || "Pardon, je n'ai pas compris. Tu peux répéter ?";
+      const notes = Array.isArray(result.notes_en) ? result.notes_en : [];
+      setSessionSummary(result.session_summary || sessionSummary);
+      const finalHist = [...newHist, { role:"tutor", text:tutorText, notes }];
+      setHistory(finalHist);
+      setPlayingIdx(finalHist.length - 1);
+      speakOpenAI(tutorText, apiKey);
+    } catch (e) {
+      setError(e.message || "Something went wrong");
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  /* ── Recording ── */
+  async function startRecording() {
+    setError(null);
+    stopAudio();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      chunksRef.current = [];
+      const mime = pickMime();
+      const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      mediaRecorderRef.current = mr;
+      mr.ondataavailable = (e) => { if (e.data?.size > 0) chunksRef.current.push(e.data); };
+      mr.onstop = async () => {
+        setRecording(false);
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(chunksRef.current, { type: mr.mimeType || "audio/webm" });
+        chunksRef.current = [];
+        if (blob.size < 1000) return;
+        setProcessing(true);
+        try {
+          const text = await transcribe(blob);
+          if (!text) { setProcessing(false); return; }
+          setProcessing(false);
+          await processTurn(text);
+        } catch (e) {
+          setError(e.message || "Transcription error");
+          setProcessing(false);
+        }
+      };
+      setRecording(true);
+      mr.start(250);
+    } catch { setError("Microphone access denied. Please allow mic permissions."); }
+  }
+
+  function stopRecording() { try { mediaRecorderRef.current?.stop(); } catch {} }
+  const pressStart = () => { if (pressedRef.current || processing) return; pressedRef.current = true; startRecording(); };
+  const pressStop = () => { if (!pressedRef.current) return; pressedRef.current = false; stopRecording(); };
+
+  /* ── Text submit ── */
+  async function handleTextSubmit() {
+    const t = textInput.trim();
+    if (!t || processing) return;
+    setTextInput("");
+    await processTurn(t);
+  }
+
+  /* ── Derived ── */
+  const currentSuggestions = scene?.suggestions?.[cefrLevel] || scene?.suggestions?.A2 || [];
+  const userTurnCount = history.filter(h => h.role === "user").length;
+  const lastMsg = history.length > 0 ? history[history.length - 1] : null;
+
+  /* ══ RENDER ══ */
+  if (!apiKey) return <ApiKeyScreen onSubmit={handleApiKey} />;
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100dvh", maxWidth:520, margin:"0 auto", background:"var(--bg)", position:"relative" }}>
+
+      {/* Header */}
+      <header className="fade-up" style={{ padding:"12px 16px 10px", borderBottom:"1px solid var(--border)", background:"rgba(250,247,242,0.92)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)", position:"sticky", top:0, zIndex:10 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div style={{ display:"flex", alignItems:"baseline", gap:8 }}>
+            <h1 style={{ fontFamily:"var(--font-display)", fontSize:21, fontWeight:400, letterSpacing:"-0.01em" }}>Parle</h1>
+            <button onClick={() => setShowScenePicker(true)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12.5, color:"var(--fg-muted)", fontFamily:"var(--font-body)", padding:"2px 0", textDecoration:"underline dotted", textUnderlineOffset:3 }}>
+              {scene?.emoji} {scene?.title} ▾
+            </button>
+          </div>
+          <div style={{ display:"flex", gap:5 }}>
+            <button onClick={cycleLevel} title={CEFR_LABELS[cefrLevel]} style={{ padding:"5px 10px", fontSize:12, fontWeight:600, border:"1px solid var(--border)", borderRadius:8, background:"var(--bg-card)", color:"var(--accent)", cursor:"pointer", fontFamily:"var(--font-body)" }}>{cefrLevel}</button>
+            <button onClick={() => userTurnCount >= 2 ? setShowSummary(true) : newSession()} title={userTurnCount >= 2 ? "End session" : "New session"} style={{ padding:"5px 10px", fontSize:12, border:"1px solid var(--border)", borderRadius:8, background:"var(--bg-card)", color:"var(--fg-dim)", cursor:"pointer", fontFamily:"var(--font-body)" }}>
+              {userTurnCount >= 2 ? "Fin" : "New"}
+            </button>
+            <button onClick={clearKey} title="Change API key" style={{ padding:"5px 8px", fontSize:12, border:"1px solid var(--border)", borderRadius:8, background:"var(--bg-card)", color:"var(--fg-muted)", cursor:"pointer" }}>🔑</button>
+          </div>
+        </div>
+      </header>
+
+      {/* Conversation */}
+      <div ref={scrollRef} style={{ flex:1, overflowY:"auto", padding:"14px 16px", display:"flex", flexDirection:"column", gap:2, WebkitOverflowScrolling:"touch" }}>
+
+        {/* Scene intro */}
+        {history.length <= 1 && scene && (
+          <div className="fade-up" style={{ padding:"12px 14px", background:"var(--bg-card-alt)", borderRadius:"var(--radius)", marginBottom:10, border:"1px solid var(--border)" }}>
+            <div style={{ fontSize:13, color:"var(--fg-dim)", lineHeight:1.5 }}>
+              <strong>{scene.emoji} {scene.title}</strong> — {scene.hint}
+            </div>
+          </div>
+        )}
+
+        {history.map((h, i) => (
+          <Bubble key={i} role={h.role} text={h.text} notes={h.notes}
+            isLatest={i === history.length - 1} playing={playingIdx === i}
+            onReplay={h.role==="tutor" ? () => replayAtIndex(i, false) : null}
+            onReplaySlow={h.role==="tutor" ? () => replayAtIndex(i, true) : null}
+          />
+        ))}
+
+        {processing && (
+          <div className="slide-in" style={{ alignSelf:"flex-start", padding:"12px 18px", background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"18px 18px 18px 4px", boxShadow:"var(--shadow)" }}>
+            <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+              <span style={{ fontSize:11, color:"var(--fg-muted)", textTransform:"uppercase", letterSpacing:"0.04em" }}>Thinking</span>
+              <span style={{ display:"flex", gap:3 }}>
+                {[0,1,2].map(i => <span key={i} style={{ width:5, height:5, borderRadius:"50%", background:"var(--fg-muted)", animation:"dotBounce 0.9s ease-in-out " + (i*0.15) + "s infinite" }} />)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Suggestion chips */}
+        {!processing && lastMsg?.role === "tutor" && currentSuggestions.length > 0 && (
+          <div className="slide-in" style={{ marginTop:6, marginBottom:4 }}>
+            <div style={{ fontSize:11, color:"var(--fg-muted)", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.04em" }}>Try saying</div>
+            <div style={{ display:"flex", flexWrap:"wrap" }}>
+              {currentSuggestions.map((s,i) => (
+                <button key={i} className="chip" onClick={() => processTurn(s)}>{s}</button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div style={{ margin:"0 16px 6px", padding:"10px 14px", background:"var(--error-bg)", border:"1px solid var(--error-border)", borderRadius:"var(--radius-sm)", fontSize:13.5, color:"var(--error-fg)", lineHeight:1.4, display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
+          <span>{error}</span>
+          <button onClick={() => setError(null)} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--error-fg)", fontWeight:600, fontSize:14, flexShrink:0 }}>✕</button>
+        </div>
+      )}
+
+      {/* Bottom bar */}
+      <div style={{ borderTop:"1px solid var(--border)", background:"rgba(250,247,242,0.95)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)", paddingBottom:"max(10px, env(safe-area-inset-bottom))" }}>
+        <div className="text-input-row" style={{ paddingTop:10 }}>
+          <input ref={textInputRef} type="text" placeholder="Or type in French…" value={textInput}
+            onChange={e => setTextInput(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleTextSubmit(); } }}
+            disabled={processing} />
+          <button disabled={!textInput.trim() || processing} onClick={handleTextSubmit}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <RecordButton recording={recording} processing={processing} onPressStart={pressStart} onPressStop={pressStop} />
+        <div style={{ textAlign:"center", fontSize:11.5, color:"var(--fg-muted)", marginTop:1, paddingBottom:2 }}>
+          {recording ? "Release to send" : processing ? "Processing…" : "Hold to speak"}
+        </div>
+      </div>
+
+      {/* Modals */}
+      {showScenePicker && <ScenePicker current={scene} onPick={pickScene} onClose={() => setShowScenePicker(false)} />}
+      {showSummary && <SessionSummaryModal turnCount={userTurnCount} sessionSummary={sessionSummary} onClose={() => setShowSummary(false)} onNewSession={() => { setShowSummary(false); newSession(); }} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
